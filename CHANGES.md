@@ -2,7 +2,7 @@
 
 # Changes #
 
-* @dev (????-??-??)
+* @dev (2021-10-12)
   * Reworked the slider component in the I/O extra library
   * Tick clock frequency display moved to left corner. It's also bigger and text color is configurable.
   * Completely rewritten command line argument parser:
