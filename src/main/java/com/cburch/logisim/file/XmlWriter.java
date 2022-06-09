@@ -31,31 +31,20 @@ import com.cburch.logisim.util.LineBuffer;
 import com.cburch.logisim.util.StringUtil;
 import com.cburch.logisim.util.XmlUtil;
 import com.cburch.logisim.vhdl.base.VhdlContent;
+import org.w3c.dom.*;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.*;
 import java.util.regex.Pattern;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Result;
-import javax.xml.transform.Source;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
 
 final class XmlWriter {
 
@@ -122,13 +111,7 @@ final class XmlWriter {
   }
 
   private static final Comparator<Node> nodeComparator =
-      (nodeA, nodeB) -> {
-        var compareResult = stringCompare(nodeA.getNodeName(), nodeB.getNodeName());
-        if (compareResult != 0) return compareResult;
-        compareResult = stringCompare(attrsToString(nodeA.getAttributes()), attrsToString(nodeB.getAttributes()));
-        if (compareResult != 0) return compareResult;
-        return stringCompare(nodeA.getNodeValue(), nodeB.getNodeValue());
-      };
+          Comparator.comparingInt(System::identityHashCode);
 
   static void sort(Node top) {
     final var children = top.getChildNodes();
@@ -164,7 +147,8 @@ final class XmlWriter {
     }
     if (childrenCount > 1 && !name.equals("project") && !name.equals("lib") && !name.equals("toolbar")) {
       final var nodeSet = new Node[childrenCount];
-      for (var nodeIndex = 0; nodeIndex < childrenCount; nodeIndex++) nodeSet[nodeIndex] = children.item(nodeIndex);
+      for (var nodeIndex = 0; nodeIndex < childrenCount; nodeIndex++)
+        nodeSet[nodeIndex] = children.item(nodeIndex);
       Arrays.sort(nodeSet, nodeComparator);
       for (var nodeIndex = 0; nodeIndex < childrenCount; nodeIndex++) top.insertBefore(nodeSet[nodeIndex], null);
     }
@@ -174,7 +158,7 @@ final class XmlWriter {
   }
 
   static void write(LogisimFile file, OutputStream out, LibraryLoader loader, File destFile, String libraryHome)
-      throws ParserConfigurationException, TransformerException {
+          throws ParserConfigurationException, TransformerException {
 
     final var docFactory = XmlUtil.getHardenedBuilderFactory();
     final var docBuilder = docFactory.newDocumentBuilder();
@@ -219,8 +203,7 @@ final class XmlWriter {
     if (attrs == null) return;
     if (source != null && source.isAllDefaultValues(attrs, BuildInfo.version)) return;
     for (final var attrBase : attrs.getAttributes()) {
-      @SuppressWarnings("unchecked")
-      final var attr = (Attribute<Object>) attrBase;
+      @SuppressWarnings("unchecked") final var attr = (Attribute<Object>) attrBase;
       final var val = attrs.getValue(attr);
       if (userModifiedOnly && (attrs.isReadOnly(attr) || attr.isHidden())) continue;
       if (attrs.isToSave(attr) && val != null) {
@@ -228,8 +211,8 @@ final class XmlWriter {
         final var defaultValue = dflt == null ? "" : attr.toStandardString(dflt);
         var newValue = attr.toStandardString(val);
         if (dflt == null || (!dflt.equals(val) && !defaultValue.equals(newValue))
-            || (attr.equals(StdAttr.APPEARANCE) && !userModifiedOnly)
-            || (attr.equals(ProbeAttributes.PROBEAPPEARANCE) && !userModifiedOnly && val.equals(ProbeAttributes.APPEAR_EVOLUTION_NEW))) {
+                || (attr.equals(StdAttr.APPEARANCE) && !userModifiedOnly)
+                || (attr.equals(ProbeAttributes.PROBEAPPEARANCE) && !userModifiedOnly && val.equals(ProbeAttributes.APPEAR_EVOLUTION_NEW))) {
           final var a = doc.createElement("a");
           a.setAttribute("name", attr.getName());
           if ("filePath".equals(attr.getName()) && outFilePath != null) {
@@ -434,13 +417,13 @@ final class XmlWriter {
     final var ret = doc.createElement("project");
     doc.appendChild(ret);
     ret.appendChild(
-        doc.createTextNode(
-            "\nThis file is intended to be "
-                + "loaded by "
-                + BuildInfo.displayName
-                + "("
-                + BuildInfo.url
-                + ").\n"));
+            doc.createTextNode(
+                    "\nThis file is intended to be "
+                            + "loaded by "
+                            + BuildInfo.displayName
+                            + "("
+                            + BuildInfo.url
+                            + ").\n"));
     ret.setAttribute("version", "1.0");
     ret.setAttribute("source", BuildInfo.version.toString());
 
